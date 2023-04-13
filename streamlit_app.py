@@ -1,67 +1,46 @@
-import streamlit
-import pandas
-import requests
-import snowflake.connector
-from urllib.error import URLError
 
+
+
+
+
+import pandas as pd
+import json
+import streamlit as st
+from snowflake.snowpark import Session
+import time
 streamlit.title("My Forecasting App ")
-# streamlit.header('Breakfast Favorites')
-# streamlit.text('🥣 Omega 3 & Blueberry Oatmeal')
-# streamlit.text('🥗 Kale, Spinach & Rocket Smoothie')
-# streamlit.text('🐔 Hard-Boiled Free-Range Egg')
-# streamlit.text('🥑🍞 Avocado Toast')
-# streamlit.header('🍌🥭 Build Your Own Fruit Smoothie 🥝🍇')
+if 'snowflake_connection' not in st.session_state:
+    # connect to Snowflake
+    with open('creds.json') as f:
+        connection_parameters = json.load(f)
+    st.session_state.snowflake_connection = Session.builder.configs(connection_parameters).create()
+    session = st.session_state.snowflake_connection
+else:
+    session = st.session_state.snowflake_connection
 
-my_fruit_list=pandas.read_csv('https://uni-lab-files.s3.us-west-2.amazonaws.com/dabw/fruit_macros.txt')
+st.set_page_config(layout="centered", page_title="Data Editor", page_icon="🧮")
+st.title("Snowflake Table Editor ❄️")
+st.caption("This is a demo of the `st.experimental_data_editor`.")
 
-my_fruit_list = my_fruit_list.set_index('Fruit')
-# Let's put a pick list here so they can pick the fruit they want to include 
-fruits_selected=streamlit.multiselect("Pick some fruits:", list(my_fruit_list.index),['Avocado','Strawberries'])
-fruits_to_show = my_fruit_list.loc[fruits_selected]
-# Display the table on the page.
+def get_dataset():
+    # load messages df
+    df = session.table("PREDICTIONS")
 
-streamlit.dataframe(fruits_to_show)
-streamlit.header('fruityvice Fruit advice')
+    return df
 
-def get_fruityvice_data(this_fruit_choice):
-  fruityvice_response=requests.get("https://www.fruityvice.com/api/fruit/"+this_fruit_choice)
-  # JSON to pandas dataframe
-  fruityvice_normalized = pandas.json_normalize(fruityvice_response.json())
-  # Print dataframe
-  return fruityvice_normalized
-try:
-  
-  fruit_choice=streamlit.text_input('What fruit would you like information about?')
-  if not fruit_choice:
-    streamlit.error('please select a fruit to get a information')
-  else:
-    back_from_function=get_fruityvice_data(fruit_choice)
-    streamlit.dataframe(back_from_function)
-    
-    
-except URLError as e:
-  streamlit.error()
-  
+dataset = get_dataset()
 
-streamlit.header("The Fruit Load List contains")
+with st.form("data_editor_form"):
+    st.caption("Edit the dataframe below")
+    edited = st.experimental_data_editor(dataset, use_container_width=True, num_rows="dynamic")
+    submit_button = st.form_submit_button("Submit")
 
-  
-
-
-def get_fruit_load_list():
-  with my_cnx.cursor() as my_cur:
-    my_cur.execute("SELECT * from fruit_load_list")
-    return my_cur.fetchall()
-if streamlit.button('get Fruit Load List'):
-  my_cnx = snowflake.connector.connect(**streamlit.secrets["snowflake"])
-  my_data_rows=get_fruit_load_list()
-  my_cnx.close()
-  streamlit.dataframe(my_data_rows)
-
-def insert_row_snowflake(my_fruit):
-   with my_cnx.cursor() as my_cur:
-    my_cur.execute("insert into fruit_load_list values('"+my_fruit+"')")
-    return 'Thanks for adding ',my_fruit
-streamlit.stop()
-add_my_fruit=streamlit.text_input('Which fruit would You like to add?','jackfruit')
-streamlit.write('Thanks for adding ',add_my_fruit)
+# if submit_button:
+#     try:
+#         session.write_pandas(edited, "ESG_SCORES_DEMO", overwrite=True)
+#         st.success("Table updated")
+#         time.sleep(5)
+#     except:
+#         st.warning("Error updating table")
+#     #display success message for 5 seconds and update the table to reflect what is in Snowflake
+#     st.experimental_rerun()
