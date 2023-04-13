@@ -4,14 +4,10 @@ import streamlit as st
 from snowflake.snowpark import Session
 import time
 st.title("My Forecasting App ")
-if 'snowflake_connection' not in st.session_state:
-    # connect to Snowflake
-    with open('creds.json') as f:
-        connection_parameters = json.load(f)
-    st.session_state.snowflake_connection = Session.builder.configs(connection_parameters).create()
-    session = st.session_state.snowflake_connection
-else:
-    session = st.session_state.snowflake_connection
+
+st.session_state.snowflake_connection = Session.builder.configs(**streamlit.secrets["snowflake"]).create()
+session = st.session_state.snowflake_connection
+
 
 st.set_page_config(layout="centered", page_title="Data Editor", page_icon="🧮")
 st.title("Snowflake Table Editor ❄️")
