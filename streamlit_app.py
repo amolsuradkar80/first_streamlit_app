@@ -5,7 +5,7 @@ from snowflake.snowpark import Session
 import time
 st.title("My Forecasting App ")
 
-st.session_state.snowflake_connection = Session.builder.configs(**streamlit.secrets["snowflake"]).create()
+st.session_state.snowflake_connection = Session.builder.configs(**st.secrets["snowflake"]).create()
 session = st.session_state.snowflake_connection
 
 
