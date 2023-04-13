@@ -1,14 +1,9 @@
-
-
-
-
-
 import pandas as pd
 import json
 import streamlit as st
 from snowflake.snowpark import Session
 import time
-streamlit.title("My Forecasting App ")
+st.title("My Forecasting App ")
 if 'snowflake_connection' not in st.session_state:
     # connect to Snowflake
     with open('creds.json') as f:
